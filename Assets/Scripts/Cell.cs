@@ -11,7 +11,8 @@ public class Cell : MonoBehaviour, IPointerClickHandler
 
     public GridGenerator.Coord coord;
     [SerializeField] private TMP_Text txt;
-    [SerializeField] private Image img;
+    [SerializeField] private Image icon;
+    [SerializeField] private Sprite bombSprite, xSprite, flagSprite;
 
     public void Initialize(GridGenerator.Coord coord, bool isBomb)
     {
@@ -30,14 +31,14 @@ public class Cell : MonoBehaviour, IPointerClickHandler
         isTriggered = true;
         if (isBomb)
         {
-            img.color = Color.red;
+            SetImage("bomb");
             GameManager.instance.LoseGame();
         } else
         {
             int surroundingBombs = getSurroundingBombCount();
+            icon.color = new Color(0.8f, 0.8f, 0.8f, 1.0f);
             if (surroundingBombs == 0)
             {
-                img.color = Color.blue;
                 for (int x = coord.x - 1; x <= coord.x + 1; x++)
                 {
                     for (int y = coord.y - 1; y <= coord.y + 1; y++)
@@ -54,7 +55,6 @@ public class Cell : MonoBehaviour, IPointerClickHandler
                 }
             } else
             {
-                img.color = Color.lightGray;
                 txt.text = surroundingBombs.ToString();
                 txt.gameObject.SetActive(true);
             }
@@ -69,11 +69,12 @@ public class Cell : MonoBehaviour, IPointerClickHandler
         isFlagged = toggle;
         if (isFlagged)
         {
-            img.color = Color.hotPink;
+            SetImage("flag");
         } else
         {
-            img.color = Color.white;
+            SetImage("");
         }
+        GameManager.instance.CheckCells();
     }
 
     int getSurroundingBombCount()
@@ -101,6 +102,25 @@ public class Cell : MonoBehaviour, IPointerClickHandler
         } else if (eventData.button == PointerEventData.InputButton.Right)
         {
             ToggleFlag(!isFlagged);
+        }
+    }
+
+    public void SetImage(string name)
+    {
+        switch (name)
+        {
+            case "bomb":
+                icon.sprite = bombSprite;
+                break;
+            case "x":
+                icon.sprite = xSprite;
+                break;
+            case "flag":
+                icon.sprite = flagSprite;
+                break;
+            default:
+                icon.sprite = null;
+                break;
         }
     }
 }

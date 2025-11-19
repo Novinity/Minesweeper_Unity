@@ -44,6 +44,8 @@ public class GridGenerator : MonoBehaviour
                 cells.Add(cell);
             }
         }
+        bombCount = Mathf.RoundToInt(bombPercentage * (MAP_WIDTH * MAP_HEIGHT) / 100);
+        GameManager.instance.UpdateFlagCount(bombCount);
     }
 
     public void Generate(Coord startingPosition)
@@ -64,7 +66,7 @@ public class GridGenerator : MonoBehaviour
         holderTransform.sizeDelta = new Vector2(MAP_WIDTH * 100, MAP_HEIGHT * 100);
         holderTransform.localScale = new Vector3(10f/MAP_WIDTH, 10f/MAP_WIDTH, 1);
 
-        int bombCount = Mathf.RoundToInt(bombPercentage * (MAP_WIDTH * MAP_HEIGHT) / 100);
+        bombCount = Mathf.RoundToInt(bombPercentage * (MAP_WIDTH * MAP_HEIGHT) / 100);
         Debug.Log($"Bomb count: {bombCount}");
 
         List<Coord> bombCoords = new List<Coord>();
