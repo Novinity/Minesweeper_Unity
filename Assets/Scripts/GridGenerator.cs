@@ -18,40 +18,44 @@ public class GridGenerator : MonoBehaviour
     [SerializeField] private Transform cellParent;
     public List<Cell> cells = new List<Cell>();
 
+    private bool generated = false;
+
+    void Awake()
+    {
+        instance = this;
+
+        MAP_WIDTH = GameOptionPersistence.gridX;
+        MAP_HEIGHT = GameOptionPersistence.gridY;
+        bombPercentage = GameOptionPersistence.bombPercentage;
+    }
+
     void Start()
     {
-        if (instance == null)
-        {
-            instance = this;
-        } else
-        {
-            Destroy(gameObject);
-            return;
-        }
-        seed = Random.Range(-1000000, 100001);
-
         RectTransform holderTransform = cellParent.GetComponent<RectTransform>();
         holderTransform.sizeDelta = new Vector2(MAP_WIDTH * 100, MAP_HEIGHT * 100);
         holderTransform.localScale = new Vector3(10f/MAP_WIDTH, 10f/MAP_WIDTH, 1);
 
-        for (int x = 0; x < MAP_WIDTH; x++)
-        {
-            for (int y = 0; y < MAP_HEIGHT; y++)
-            {
-                GameObject instantiatedCell = Instantiate(cellPrefab, cellParent);
-                Cell cell = instantiatedCell.GetComponent<Cell>();
-                cell.Initialize(new Coord(x, y), false);
-                cells.Add(cell);
-            }
-        }
+        // for (int x = 0; x < MAP_WIDTH; x++)
+        // {
+        //     for (int y = 0; y < MAP_HEIGHT; y++)
+        //     {
+        //         GameObject instantiatedCell = Instantiate(cellPrefab, cellParent);
+        //         Cell cell = instantiatedCell.GetComponent<Cell>();
+        //         cell.Initialize(new Coord(x, y), false);
+        //         cells.Add(cell);
+        //     }
+        // }
         bombCount = Mathf.RoundToInt(bombPercentage * (MAP_WIDTH * MAP_HEIGHT) / 100);
         GameManager.instance.UpdateFlagCount(bombCount);
+
+        // if (GameManager.instance.gameStarted.Value) Generate();
     }
 
-    public void Generate(Coord startingPosition)
+    public void Generate()
     {
-        if (GameManager.instance.gameStarted) return;
-        GameManager.instance.gameStarted = true;
+        if (GameNetworkManager.instance.IsHost) GameManager.instance.gameStarted.Value = true;
+        seed = GameManager.instance.seed.Value;
+
         foreach (Cell cell in cells)
         {
             Destroy(cell.gameObject);
@@ -70,20 +74,6 @@ public class GridGenerator : MonoBehaviour
         Debug.Log($"Bomb count: {bombCount}");
 
         List<Coord> bombCoords = new List<Coord>();
-        List<Coord> forcedSafety = new List<Coord>();
-
-        for (int x = startingPosition.x - 1; x <= startingPosition.x + 1; x++)
-        {
-            for (int y = startingPosition.y - 1; y <= startingPosition.y + 1; y++)
-            {
-                forcedSafety.Add(new Coord(x, y));
-            }
-        }
-
-        if (bombCount > (map.Length - forcedSafety.Count))
-        {
-            bombCount -= bombCount - (map.Length - forcedSafety.Count);
-        }
 
         int i = 0;
         while (i < bombCount)
@@ -92,7 +82,7 @@ public class GridGenerator : MonoBehaviour
             int y = pseudoRandom.Next(0, MAP_HEIGHT);
 
             Coord bombCoord = new Coord(x, y);
-            if (bombCoords.Contains(bombCoord) || forcedSafety.Contains(bombCoord))
+            if (bombCoords.Contains(bombCoord))
             {
                 continue;
             }
@@ -120,7 +110,31 @@ public class GridGenerator : MonoBehaviour
             }
         }
 
-        getCellAtPosition(startingPosition.x, startingPosition.y).Trigger();
+        List<Cell> zeroes = new List<Cell>();
+        foreach (Cell cell in cells)
+        {
+            if (cell.getSurroundingBombCount() == 0) zeroes.Add(cell);
+        }
+        if (zeroes.Count != 0)
+        {
+            Cell startPos = zeroes[pseudoRandom.Next(0, zeroes.Count)];
+            startPos.SetImage("safe");
+        } else
+        {
+            List<Cell> safe = new List<Cell>();
+            foreach (Cell cell in cells)
+            {
+                if (!cell.isBomb) safe.Add(cell);
+            }
+
+            Cell startPos = safe[pseudoRandom.Next(0, safe.Count)];
+            startPos.SetImage("safe");
+        }
+
+        // Player.LocalPlayer.FlagsLeft.Value = bombCount;
+        Player.LocalPlayer.TilesLeft.Value = map.Length;
+
+        generated = true;
     }
 
     public Cell getCellAtPosition(int x, int y)

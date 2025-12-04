@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class Cell : MonoBehaviour, IPointerClickHandler
+public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     public bool isBomb;
     public bool isTriggered;
@@ -11,31 +11,60 @@ public class Cell : MonoBehaviour, IPointerClickHandler
 
     public GridGenerator.Coord coord;
     [SerializeField] private TMP_Text txt;
-    [SerializeField] private Image icon;
-    [SerializeField] private Sprite bombSprite, xSprite, flagSprite;
+    [SerializeField] private Image icon, bg;
+    [SerializeField] private Sprite bombSprite, xSprite, flagSprite, safeSprite;
+
+    public string curImg;
+
+    public Color baseColor1, baseColor2, baseHoverColor, pickedColor1, pickedColor2, pickedHoverColor = Color.white;
+    public Color[] possibleBombColors, possibleBombInnerColors;
+
+    Color defaultColor;
+    private bool hovering = false;
 
     public void Initialize(GridGenerator.Coord coord, bool isBomb)
     {
         this.coord = coord;
         this.isBomb = isBomb;
         gameObject.name = $"{coord.x}, {coord.y}";
+
+        if (coord.y % 2 == 0)
+        {
+            if (coord.x % 2 == 0)
+            {
+                bg.color = baseColor1;
+                defaultColor = baseColor1;
+            } else
+            {
+                bg.color = baseColor2;
+                defaultColor = baseColor2;
+            }
+        } else
+        {
+            if (coord.x % 2 != 0)
+            {
+                bg.color = baseColor1;
+                defaultColor = baseColor1;
+            } else
+            {
+                bg.color = baseColor2;
+                defaultColor = baseColor2;
+            }
+        }
     }
 
     public void Trigger() {
-        if (!GameManager.instance.gameStarted)
-        {
-            GridGenerator.instance.Generate(coord);
-            return;
-        }
-        if (isTriggered || isFlagged || GameManager.instance.gameEnded) return;
+        if (isTriggered || isFlagged || GameManager.instance.gameEnded.Value || GameManager.instance.hasLost) return;
         isTriggered = true;
         if (isBomb)
         {
             SetImage("bomb");
+
             GameManager.instance.LoseGame();
         } else
         {
             int surroundingBombs = getSurroundingBombCount();
+            SetTextColor();
             icon.color = new Color(0.8f, 0.8f, 0.8f, 1.0f);
             if (surroundingBombs == 0)
             {
@@ -59,13 +88,38 @@ public class Cell : MonoBehaviour, IPointerClickHandler
                 txt.gameObject.SetActive(true);
             }
 
+            if (coord.y % 2 == 0)
+            {
+                if (coord.x % 2 == 0)
+                {
+                    bg.color = pickedColor1;
+                    defaultColor = pickedColor1;
+                } else
+                {
+                    bg.color = pickedColor2;
+                    defaultColor = pickedColor2;
+                }
+            } else
+            {
+                if (coord.x % 2 != 0)
+                {
+                    bg.color = pickedColor1;
+                    defaultColor = pickedColor1;
+                } else
+                {
+                    bg.color = pickedColor2;
+                    defaultColor = pickedColor2;
+                }
+            }
+            if (hovering) Hover();
+
             GameManager.instance.CheckCells();
         }
     }
 
     public void ToggleFlag(bool toggle)
     {
-        if (isTriggered || GameManager.instance.gameEnded || !GameManager.instance.gameStarted) return;
+        if (isTriggered || GameManager.instance.gameEnded.Value || !GameManager.instance.gameStarted.Value) return;
         isFlagged = toggle;
         if (isFlagged)
         {
@@ -77,7 +131,7 @@ public class Cell : MonoBehaviour, IPointerClickHandler
         GameManager.instance.CheckCells();
     }
 
-    int getSurroundingBombCount()
+    public int getSurroundingBombCount()
     {
         int surroundingBombs = 0;
         for (int x = coord.x - 1; x <= coord.x + 1; x++)
@@ -111,6 +165,9 @@ public class Cell : MonoBehaviour, IPointerClickHandler
         {
             case "bomb":
                 icon.sprite = bombSprite;
+                int bombColorIndex = Random.Range(0, possibleBombColors.Length);
+                bg.color = possibleBombColors[bombColorIndex];
+                icon.color = possibleBombInnerColors[bombColorIndex];
                 break;
             case "x":
                 icon.sprite = xSprite;
@@ -118,9 +175,85 @@ public class Cell : MonoBehaviour, IPointerClickHandler
             case "flag":
                 icon.sprite = flagSprite;
                 break;
+            case "safe":
+                icon.sprite = safeSprite;
+                break;
             default:
                 icon.sprite = null;
+                bg.color = defaultColor;
                 break;
         }
+        if (icon.sprite)
+        {
+            curImg = name;
+            icon.gameObject.SetActive(true);
+        }
+        else
+        {
+            curImg = "";
+            icon.gameObject.SetActive(false);
+        }
+    }
+
+    public void SetTextColor()
+    {
+        switch (getSurroundingBombCount())
+        {
+            case 1:
+                txt.color = new Color(0f/255f, 119f/255f, 211f/255f);
+                break;
+            case 2:
+                txt.color = new Color(50f/255f, 148f/255f, 68f/255f);
+                break;
+            case 3:
+                txt.color = new Color(209f/255f, 41f/255f, 47f/255f);
+                break;
+            case 4:
+                txt.color = new Color(119f/255f, 37f/255f, 164f/255f);
+                break;
+            case 5:
+                txt.color = new Color(237f/255f, 145f/255f, 34f/255f);
+                break;
+            case 6:
+                txt.color = new Color(0f/255f, 151f/255f, 169f/255f);
+                break;
+            case 7:
+                txt.color = new Color(63f/255f, 64f/255f, 68f/255f);
+                break;
+            case 8:
+                txt.color = new Color(168f/255f, 158f/255f, 148f/255f);
+                break;
+        }
+    }
+    
+    public void Hover()
+    {
+        if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
+        hovering = true;
+        if (isTriggered)
+        {
+            if (getSurroundingBombCount() != 0) bg.color = pickedHoverColor;
+            else bg.color = defaultColor;
+        } else
+        {
+            bg.color = baseHoverColor;
+        }
+    }
+
+    public void Unhover()
+    {
+        hovering = false;
+        if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
+        bg.color = defaultColor;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        Hover();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        Unhover();
     }
 }
