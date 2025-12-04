@@ -11,7 +11,7 @@ public class LobbyManager : NetworkBehaviour
 {
     public static LobbyManager instance {get; private set;}
 
-    [SerializeField] private TMP_Text lobbyNameText;
+    [SerializeField] private TMP_Text lobbyNameText, lobbyCodeText;
 
     [SerializeField] private Transform playerListContent;
     [SerializeField] private GameObject playerEntryPrefab;
@@ -57,6 +57,7 @@ public class LobbyManager : NetworkBehaviour
         {
             GameNetworkManager.instance.players.CollectionChanged += PlayerCollectionChanged_Callback;
             lobbyNameText.text = GameNetworkManager.instance.m_Lobby.Name;
+            lobbyCodeText.text = $"Code: {GameNetworkManager.instance.m_Lobby.LobbyCode}";
             foreach (Player player in GameNetworkManager.instance.players)
             {
                 AddPlayerItem(player);

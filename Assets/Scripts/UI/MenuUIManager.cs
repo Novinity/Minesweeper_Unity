@@ -1,5 +1,7 @@
 using System.IO;
+using System.Threading.Tasks;
 using TMPro;
+using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,9 +11,9 @@ public class MenuUIManager : MonoBehaviour {
     public static MenuUIManager instance;
 
     public GameObject mainMenu;
-    public GameObject lobbyListScreen, loadingScreen;
+    public GameObject lobbyListScreen, loadingScreen, lobbyCreateScreen;
 
-    public Button multiplayerButton;
+    public TMP_InputField nameInputField;
 
     private void Awake() {
         instance = this;
@@ -37,7 +39,29 @@ public class MenuUIManager : MonoBehaviour {
     public void ToggleLoadingScreen(bool val)
     {
         lobbyListScreen.SetActive(false);
+        lobbyCreateScreen.SetActive(false);
         mainMenu.SetActive(!val);
         loadingScreen.SetActive(val);
+    }
+
+    public async Task UpdatePlayerName()
+    {
+        string name = await AuthenticationService.Instance.GetPlayerNameAsync();
+        string[] sp = name.Split('#');
+        nameInputField.text = sp[0];
+    }
+
+    public async void SetPlayerName()
+    {
+        nameInputField.interactable = false;
+        string targetName = nameInputField.text;
+        if (nameInputField.text == "")
+        {
+            targetName = $"Player-{Random.Range(1000,10000)}";
+        }
+        await AuthenticationService.Instance.UpdatePlayerNameAsync(targetName);
+        await UpdatePlayerName();
+        PlayerPrefs.SetString("PlayerName", targetName);
+        nameInputField.interactable = true;
     }
 }

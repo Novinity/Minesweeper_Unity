@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
 
@@ -10,6 +11,11 @@ public class LobbyListUI : MonoBehaviour
     public GameObject lobbyListContent;
 
     public List<GameObject> listOfLobbies = new List<GameObject>();
+
+    public TMP_InputField maxPlayersInput;
+    public TMP_Dropdown lobbyTypeInput;
+
+    public TMP_InputField codeInput;
 
     void Awake()
     {
@@ -51,6 +57,14 @@ public class LobbyListUI : MonoBehaviour
 
     public void CreateLobby()
     {
-        GameNetworkManager.instance.CreateLobby();
+        GameNetworkManager.LobbyType lobbyType = lobbyTypeInput.value == 0 ? GameNetworkManager.LobbyType.PUBLIC : GameNetworkManager.LobbyType.PRIVATE;
+        GameNetworkManager.instance.CreateLobby(lobbyType, int.Parse(maxPlayersInput.text));
+    }
+
+    public void JoinViaCode()
+    {
+        if (codeInput.text.Replace(" ", "") == "" || codeInput.text.Length != 6) return;
+        MenuUIManager.instance.ToggleLoadingScreen(true);
+        GameNetworkManager.instance.JoinLobbyWithCode(codeInput.text.Replace(" ", ""));
     }
 }

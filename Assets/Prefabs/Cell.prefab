@@ -461,7 +461,7 @@ MonoBehaviour:
   bombSprite: {fileID: 21300000, guid: 986fe9deb07339746a713413c3dd82d9, type: 3}
   xSprite: {fileID: 2212887755787594758, guid: b6307fca1b767e44fb18ee389a6db734, type: 3}
   flagSprite: {fileID: 113022039, guid: 740f8acfadd77424ca83c0eb837f6adb, type: 3}
-  safeSprite: {fileID: 21300000, guid: dc54de766f9cf5a4391a4c5039ae8536, type: 3}
+  safeSprite: {fileID: 21300000, guid: 4372d4f402eee1340b36f46d415cc1c3, type: 3}
   curImg: 
   baseColor1: {r: 0.6627451, g: 0.8392157, b: 0.3137255, a: 1}
   baseColor2: {r: 0.6313726, g: 0.8156863, b: 0.28235295, a: 1}

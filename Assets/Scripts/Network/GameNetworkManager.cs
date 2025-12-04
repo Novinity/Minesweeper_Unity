@@ -71,7 +71,11 @@ public class GameNetworkManager : NetworkManager
             }
         }
         initializedUS = true;
-        if (MenuUIManager.instance) MenuUIManager.instance.ToggleLoadingScreen(false);
+        if (MenuUIManager.instance)
+        {
+            MenuUIManager.instance.UpdatePlayerName();
+            MenuUIManager.instance.ToggleLoadingScreen(false);
+        }
 
         OnServerStarted += OnServerStarted_Callback;
         OnServerStopped += OnServerStopped_Callback;

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
@@ -20,13 +21,14 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private TMP_Text timerText, finalTimeText, finalTimeText2, flagsLeftText;
     [SerializeField] private Button loseButtonM, winButtonM;
 
-    [SerializeField] private TMP_Text opponentTilesText;
+    [SerializeField] private GameObject opponentTilesLeftPrefab, opponentTilesLeftList;
 
     private float time;
 
     public NetworkVariable<long> seed = new NetworkVariable<long>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    Player opponent = null;
+    List<Player> opponents = new List<Player>();
+    List<TMP_Text> opponentTileTexts = new List<TMP_Text>();
 
     InputSystem_Actions inputActions;
 
@@ -78,6 +80,9 @@ public class GameManager : NetworkBehaviour
                     GridGenerator.instance.Generate();
                 };
             }
+        }
+        if (!IsHost || GameNetworkManager.instance.isSingleplayer)
+        {
             foreach (GameObject btn in endEarlyButtons)
             {
                 btn.SetActive(false);
@@ -89,22 +94,32 @@ public class GameManager : NetworkBehaviour
             if (player.OwnerClientId != NetworkManager.Singleton.LocalClientId)
             {
                 player.TilesLeft.OnValueChanged += OnOpponentTilesChanged;
-                opponent = player;
-                break;
+                opponents.Add(player);
+
+                GameObject txt = Instantiate(opponentTilesLeftPrefab, opponentTilesLeftList.transform);
+                opponentTileTexts.Add(txt.GetComponent<TMP_Text>());
             }
         }
 
-        if (GameNetworkManager.instance.isSingleplayer || !opponent) opponentTilesText.gameObject.SetActive(false);
+        if (GameNetworkManager.instance.isSingleplayer || opponents.Count == 0) opponentTilesLeftList.SetActive(false);
+        else OnOpponentTilesChanged(0,0);
+        
     }
 
     private void OnOpponentTilesChanged(int previousValue, int newValue)
     {
-        opponentTilesText.text = $"Opponent Tiles Left: {newValue}";
+        for (int i = 0; i < opponents.Count; i++)
+        {
+            opponentTileTexts[i].text = $"{opponents[i].PlayerName.Value} Tiles Left: {opponents[i].TilesLeft.Value}";
+        }
     }
 
     public override void OnNetworkDespawn()
     {
-        if (opponent) opponent.TilesLeft.OnValueChanged -= OnOpponentTilesChanged;
+        foreach (Player opponent in opponents)
+        {
+            opponent.TilesLeft.OnValueChanged -= OnOpponentTilesChanged;
+        }
     }
 
     void Update()
