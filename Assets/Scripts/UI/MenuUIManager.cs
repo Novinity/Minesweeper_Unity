@@ -27,6 +27,8 @@ public class MenuUIManager : MonoBehaviour {
         GameOptionPersistence.gridY = 10;
         GameOptionPersistence.bombPercentage = 12.5f;
         GameOptionPersistence.startPos = true;
+
+        UpdatePlayerName();
     }
 
     public void PlaySingleplayer() {

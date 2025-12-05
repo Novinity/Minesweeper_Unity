@@ -240,6 +240,7 @@ public class GameManager : NetworkBehaviour
 
         GridGenerator.instance.Generate();
         UnLose();
+        CheckCells();
     }
 
     public void ReturnToLobby()
