@@ -248,6 +248,14 @@ public class GameManager : NetworkBehaviour
     {
         hasLost = false;
         loseScreen.SetActive(false);
+        winScreen.SetActive(false);
+        if (GameNetworkManager.instance.isSingleplayer)
+        {
+            gameStarted.Value = false;
+            gameEnded.Value = false;
+            Player.LocalPlayer.Loaded.Value = true;
+            StartCoroutine(WaitForAllLoaded());
+        }
     }
 
     public void QuitGame()

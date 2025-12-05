@@ -37,6 +37,13 @@ public class Player : NetworkBehaviour
         LocalPlayer = this;
 
         SceneManager.activeSceneChanged += OnSceneChanged;
+        if (SceneManager.GetActiveScene().name == "s2_Game")
+        {
+            Loaded.Value = true;
+        } else
+        {
+            Loaded.Value = false;
+        }
     }
 
     public override void OnNetworkDespawn()
