@@ -129,7 +129,7 @@ public class GameManager : NetworkBehaviour
             if (!pauseScreen.activeSelf || !GameNetworkManager.instance.isSingleplayer)
                 time += Time.deltaTime / 60;
         }
-        timerText.text = formatTime(time);
+        timerText.text = TimeUtils.formatTime(time);
     }
 
     public void LoseGame()
@@ -155,8 +155,11 @@ public class GameManager : NetworkBehaviour
     public void WinGame()
     {
         if (!gameStarted.Value || gameEnded.Value) return;
-        finalTimeText.text = formatTime(time);
-        finalTimeText2.text = formatTime(time);
+        finalTimeText.text = $"Your time: {TimeUtils.formatTime(time)}";
+        finalTimeText2.text = $"Your time: {TimeUtils.formatTime(time)}";
+
+        SaveLoad.SaveHighScore(GameOptionPersistence.gridX, GameOptionPersistence.gridY, GameOptionPersistence.bombPercentage, time);
+
         WinGame_Rpc(AuthenticationService.Instance.PlayerId);
     }
 
@@ -262,15 +265,6 @@ public class GameManager : NetworkBehaviour
     {
         Debug.Log("Quit!");
         GameNetworkManager.instance.LeaveGame();
-    }
-
-    private string formatTime(float time)
-    {
-        float curTime = time;
-        int hour = Mathf.FloorToInt(curTime);
-        if (hour > 12) hour -= 12;
-        int minutes = Mathf.FloorToInt(60 * (curTime - Mathf.FloorToInt(curTime)));
-        return $"{hour}:{minutes:00}";
     }
 
     public void TogglePause(bool val)
