@@ -46,7 +46,11 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         inputActions.Player.Attack.performed += delegate
         {
             leftClickHeld = true;
-            if (rightClickHeld) chording = true;
+            if (rightClickHeld)
+            {
+                chording = true;
+                CheckChordSurroundings();
+            }
         };
         inputActions.Player.Attack.canceled += delegate
         {
@@ -57,7 +61,11 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         inputActions.Player.ADS.performed += delegate
         {
             rightClickHeld = true;
-            if (leftClickHeld) chording = true;
+            if (leftClickHeld)
+            {
+                chording = true;
+                CheckChordSurroundings();
+            }
         };
         inputActions.Player.ADS.canceled += delegate
         {
@@ -169,6 +177,7 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         {
             bool foundChording = false;
             List<Cell> flaggedSurrounding = new List<Cell>();
+            List<Cell> surrounding = new List<Cell>();
             for (int x = coord.x - 1; x <= coord.x + 1; x++)
             {
                 for (int y = coord.y - 1; y <= coord.y + 1; y++)
@@ -178,6 +187,7 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
                     {
                         if (cell.hovering) foundChording = true;
                         if (cell.isFlagged) flaggedSurrounding.Add(cell);
+                        surrounding.Add(cell);
                     }
                 }
             }
@@ -348,5 +358,38 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public void OnPointerExit(PointerEventData eventData)
     {
         Unhover();
+    }
+
+    void CheckChordSurroundings()
+    {
+        if (chording && !isFlagged && isTriggered && hovering)
+        {
+            List<Cell> flaggedSurrounding = new List<Cell>();
+            List<Cell> surrounding = new List<Cell>();
+
+            for (int x = coord.x - 1; x <= coord.x + 1; x++)
+            {
+                for (int y = coord.y - 1; y <= coord.y + 1; y++)
+                {
+                    Cell cell = GridGenerator.instance.getCellAtPosition(x, y);
+                    if (cell)
+                    {
+                        if (cell.isFlagged) flaggedSurrounding.Add(cell);
+                        surrounding.Add(cell);
+                    }
+                }
+            }
+
+            
+            int flaggedBombs = 0;
+            foreach (Cell flagged in flaggedSurrounding) if (flagged.isBomb) flaggedBombs++;
+            if (flaggedBombs == getSurroundingBombCount())
+            {
+                foreach (Cell cell in surrounding)
+                {
+                    if (!cell.isFlagged) cell.Trigger();
+                }
+            }
+        }
     }
 }
