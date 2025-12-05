@@ -16,9 +16,9 @@ public class GameManager : NetworkBehaviour
     public NetworkVariable<bool> gameEnded = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public bool hasLost = false;
 
-    [SerializeField] private GameObject winScreen, loseScreen, winScreenM, loseScreenM, pauseScreen;
+    [SerializeField] private GameObject winScreen, loseScreen, winScreenM, loseScreenM, pauseScreen, waitingForPlayersScreen, countdownScreen;
     [SerializeField] private GameObject[] endEarlyButtons;
-    [SerializeField] private TMP_Text timerText, finalTimeText, finalTimeText2, flagsLeftText;
+    [SerializeField] private TMP_Text timerText, finalTimeText, finalTimeText2, flagsLeftText, countdownText;
     [SerializeField] private Button loseButtonM, winButtonM;
 
     [SerializeField] private GameObject opponentTilesLeftPrefab, opponentTilesLeftList;
@@ -63,11 +63,11 @@ public class GameManager : NetworkBehaviour
     {
         if (IsHost)
         {
+            GameNetworkManager.instance.ToggleLobbyLock(true);
             GameNetworkManager.instance.SpawnPlayers();
 
             seed.Value = Random.Range(-1000000, 100001);
             GridGenerator.instance.Generate();
-            gameStarted.Value = true;
         } else
         {
             if (seed.Value != 0)
@@ -103,7 +103,8 @@ public class GameManager : NetworkBehaviour
 
         if (GameNetworkManager.instance.isSingleplayer || opponents.Count == 0) opponentTilesLeftList.SetActive(false);
         else OnOpponentTilesChanged(0,0);
-        
+
+        StartCoroutine(WaitForAllLoaded());
     }
 
     private void OnOpponentTilesChanged(int previousValue, int newValue)
@@ -188,7 +189,6 @@ public class GameManager : NetworkBehaviour
 
             if (cell.curImg == "safe") cell.SetImage("");
         }
-        Player.LocalPlayer.FlagsLeft.Value = flagsLeft;
         Player.LocalPlayer.TilesLeft.Value = GridGenerator.instance.map.Length - cellsTouched;
 
         UpdateFlagCount(flagsLeft);
@@ -252,6 +252,7 @@ public class GameManager : NetworkBehaviour
 
     public void QuitGame()
     {
+        Debug.Log("Quit!");
         GameNetworkManager.instance.LeaveGame();
     }
 
@@ -267,5 +268,38 @@ public class GameManager : NetworkBehaviour
     public void TogglePause(bool val)
     {
         pauseScreen.SetActive(val);
+    }
+
+    IEnumerator WaitForAllLoaded()
+    {
+        waitingForPlayersScreen.SetActive(true);
+        while (true)
+        {
+            int loaded = 0;
+            foreach (Player player in GameNetworkManager.instance.players)
+            {
+                if (player.Loaded.Value)
+                {
+                    loaded++;
+                }
+            }
+            if (loaded != GameNetworkManager.instance.players.Count) yield return new WaitForEndOfFrame();
+            else break;
+        }
+
+        waitingForPlayersScreen.SetActive(false);
+        countdownScreen.SetActive(true);
+        
+        for (int i = 3; i > 0; i--)
+        {
+            countdownText.text = i.ToString();
+            yield return new WaitForSecondsRealtime(1);
+        }
+
+        countdownText.text = "GO!";
+        yield return new WaitForSeconds(1);
+        countdownScreen.SetActive(false);
+
+        if (IsHost) gameStarted.Value = true;
     }
 }

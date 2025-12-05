@@ -291,6 +291,11 @@ public class GameNetworkManager : NetworkManager
                     field: QueryFilter.FieldOptions.AvailableSlots,
                     op: QueryFilter.OpOptions.GT,
                     value: "0"
+                ),
+                new QueryFilter(
+                    field: QueryFilter.FieldOptions.IsLocked,
+                    op: QueryFilter.OpOptions.EQ,
+                    value: "false"
                 )
             };
 
@@ -493,6 +498,24 @@ public class GameNetworkManager : NetworkManager
         {
             LobbyService.Instance.SendHeartbeatPingAsync(m_Lobby.Id);
             yield return delay;
+        }
+    }
+
+    public async void ToggleLobbyLock(bool val)
+    {
+        if (m_Lobby == null) return;
+        UpdateLobbyOptions updateLobbyOptions = new UpdateLobbyOptions
+        {
+            IsLocked = val
+        };
+
+        try
+        {
+            Lobby updatedLobby = await LobbyService.Instance.UpdateLobbyAsync(m_Lobby.Id, updateLobbyOptions);
+            m_Lobby = updatedLobby;
+        } catch (LobbyServiceException e)
+        {
+            Debug.LogWarning($"Failed to update lobby: {e.Message}");
         }
     }
 

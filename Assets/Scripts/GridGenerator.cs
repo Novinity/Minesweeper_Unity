@@ -53,7 +53,7 @@ public class GridGenerator : MonoBehaviour
 
     public void Generate()
     {
-        if (GameNetworkManager.instance.IsHost) GameManager.instance.gameStarted.Value = true;
+        // if (GameNetworkManager.instance.IsHost) GameManager.instance.gameStarted.Value = true;
         seed = GameManager.instance.seed.Value;
 
         foreach (Cell cell in cells)

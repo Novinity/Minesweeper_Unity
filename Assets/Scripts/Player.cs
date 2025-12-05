@@ -1,3 +1,4 @@
+using System;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,7 +12,8 @@ public class Player : NetworkBehaviour
     public NetworkVariable<bool> isHost = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public NetworkVariable<int> TilesLeft = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    public NetworkVariable<int> FlagsLeft = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    public NetworkVariable<bool> Loaded = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     void Start()
     {
@@ -21,11 +23,20 @@ public class Player : NetworkBehaviour
         }
     }
 
+    private void OnSceneChanged(Scene oldScene, Scene newScene)
+    {
+        Debug.Log(newScene.name);
+        if (newScene.name == "s2_Game") Loaded.Value = true;
+        else Loaded.Value = false;
+    }
+
     public override void OnNetworkSpawn()
     {
         if (!IsOwner) return;
         PlayerName.Value = PlayerPrefs.GetString("PlayerName");
         LocalPlayer = this;
+
+        SceneManager.activeSceneChanged += OnSceneChanged;
     }
 
     public override void OnNetworkDespawn()

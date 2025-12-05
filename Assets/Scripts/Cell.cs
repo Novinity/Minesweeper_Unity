@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using TMPro;
+using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -20,7 +22,51 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     public Color[] possibleBombColors, possibleBombInnerColors;
 
     Color defaultColor;
-    private bool hovering = false;
+    public bool hovering = false;
+    public bool chording = false;
+
+    private bool leftClickHeld, rightClickHeld;
+
+    private InputSystem_Actions inputActions;
+
+    void OnEnable()
+    {
+        if (inputActions != null) inputActions.Enable();
+    }
+
+    void OnDisable()
+    {
+        if (inputActions != null) inputActions.Disable();
+    }
+
+    void Start()
+    {
+        inputActions = new InputSystem_Actions();
+
+        inputActions.Player.Attack.performed += delegate
+        {
+            leftClickHeld = true;
+            if (rightClickHeld) chording = true;
+        };
+        inputActions.Player.Attack.canceled += delegate
+        {
+            leftClickHeld = false;
+            chording = false;
+        };
+
+        inputActions.Player.ADS.performed += delegate
+        {
+            rightClickHeld = true;
+            if (leftClickHeld) chording = true;
+        };
+        inputActions.Player.ADS.canceled += delegate
+        {
+            rightClickHeld = false;
+            chording = false;
+        };
+
+        inputActions.Enable();
+    }
 
     public void Initialize(GridGenerator.Coord coord, bool isBomb)
     {
@@ -115,6 +161,41 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
             GameManager.instance.CheckCells();
         }
+    }
+
+    void Update()
+    {
+        if (chording && !isFlagged && !isTriggered)
+        {
+            bool foundChording = false;
+            List<Cell> flaggedSurrounding = new List<Cell>();
+            for (int x = coord.x - 1; x <= coord.x + 1; x++)
+            {
+                for (int y = coord.y - 1; y <= coord.y + 1; y++)
+                {
+                    Cell cell = GridGenerator.instance.getCellAtPosition(x, y);
+                    if (cell)
+                    {
+                        if (cell.hovering) foundChording = true;
+                        if (cell.isFlagged) flaggedSurrounding.Add(cell);
+                    }
+                }
+            }
+
+            if (foundChording)
+            {
+                if (isBomb)
+                {
+                    foreach (Cell flagged in flaggedSurrounding)
+                    {
+                        if (!flagged.isBomb)
+                            Trigger();
+                    }
+                }
+                HoverFX();
+            }
+            else if (!hovering) UnhoverFX();
+        } else if (!hovering) UnhoverFX();
     }
 
     public void ToggleFlag(bool toggle)
@@ -230,6 +311,19 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
         hovering = true;
+        HoverFX();
+    }
+
+    public void Unhover()
+    {
+        hovering = false;
+        if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
+        UnhoverFX();
+    }
+
+    public void HoverFX()
+    {
+        if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
         if (isTriggered)
         {
             if (getSurroundingBombCount() != 0) bg.color = pickedHoverColor;
@@ -240,9 +334,8 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         }
     }
 
-    public void Unhover()
+    public void UnhoverFX()
     {
-        hovering = false;
         if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
         bg.color = defaultColor;
     }

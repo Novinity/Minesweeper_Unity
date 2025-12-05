@@ -42,6 +42,7 @@ public class LobbyManager : NetworkBehaviour
         {
             GameNetworkManager.instance.SpawnPlayers();
             startButton.GetComponent<Button>().interactable = true;
+            GameNetworkManager.instance.ToggleLobbyLock(false);
         } else
         {
             startButton.GetComponent<Button>().interactable = false;
