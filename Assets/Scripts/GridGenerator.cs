@@ -70,6 +70,12 @@ public class GridGenerator : MonoBehaviour
         holderTransform.sizeDelta = new Vector2(MAP_WIDTH * 100, MAP_HEIGHT * 100);
         holderTransform.localScale = new Vector3(10f/MAP_WIDTH, 10f/MAP_WIDTH, 1);
 
+        if (GridZoom.instance)
+        {
+            GridZoom.instance.minScale = holderTransform.localScale.x;
+            GridZoom.instance.ResetZoom();
+        }
+
         bombCount = Mathf.RoundToInt(bombPercentage * (MAP_WIDTH * MAP_HEIGHT) / 100);
         Debug.Log($"Bomb count: {bombCount}");
 
@@ -110,25 +116,28 @@ public class GridGenerator : MonoBehaviour
             }
         }
 
-        List<Cell> zeroes = new List<Cell>();
-        foreach (Cell cell in cells)
+        if (GameOptionPersistence.startPos)
         {
-            if (cell.getSurroundingBombCount() == 0) zeroes.Add(cell);
-        }
-        if (zeroes.Count != 0)
-        {
-            Cell startPos = zeroes[pseudoRandom.Next(0, zeroes.Count)];
-            startPos.SetImage("safe");
-        } else
-        {
-            List<Cell> safe = new List<Cell>();
+            List<Cell> zeroes = new List<Cell>();
             foreach (Cell cell in cells)
             {
-                if (!cell.isBomb) safe.Add(cell);
+                if (cell.getSurroundingBombCount() == 0) zeroes.Add(cell);
             }
+            if (zeroes.Count != 0)
+            {
+                Cell startPos = zeroes[pseudoRandom.Next(0, zeroes.Count)];
+                startPos.SetImage("safe");
+            } else
+            {
+                List<Cell> safe = new List<Cell>();
+                foreach (Cell cell in cells)
+                {
+                    if (!cell.isBomb) safe.Add(cell);
+                }
 
-            Cell startPos = safe[pseudoRandom.Next(0, safe.Count)];
-            startPos.SetImage("safe");
+                Cell startPos = safe[pseudoRandom.Next(0, safe.Count)];
+                startPos.SetImage("safe");
+            }
         }
 
         // Player.LocalPlayer.FlagsLeft.Value = bombCount;

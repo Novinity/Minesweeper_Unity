@@ -22,12 +22,14 @@ public class MenuUIManager : MonoBehaviour {
     void Start()
     {
         if (!GameNetworkManager.instance.initializedUS) ToggleLoadingScreen(true);
-    }
 
-    public void PlaySingleplayer() {
         GameOptionPersistence.gridX = 10;
         GameOptionPersistence.gridY = 10;
         GameOptionPersistence.bombPercentage = 12.5f;
+        GameOptionPersistence.startPos = true;
+    }
+
+    public void PlaySingleplayer() {
         GameNetworkManager.instance.Host(true);
     }
 

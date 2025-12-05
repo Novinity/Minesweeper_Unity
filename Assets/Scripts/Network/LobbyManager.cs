@@ -16,11 +16,8 @@ public class LobbyManager : NetworkBehaviour
     [SerializeField] private Transform playerListContent;
     [SerializeField] private GameObject playerEntryPrefab;
     [SerializeField] private GameObject startButton, gameOptions;
-    [SerializeField] private TMP_InputField gridSizeXInput, gridSizeYInput, bombPercentageInput;
 
     List<PlayerListEntry> playerListEntries = new List<PlayerListEntry>();
-
-    string prevBombPercent = "";
 
     void Awake()
     {
@@ -47,9 +44,10 @@ public class LobbyManager : NetworkBehaviour
         {
             startButton.GetComponent<Button>().interactable = false;
         
-            gridSizeXInput.interactable = false;
-            gridSizeYInput.interactable = false;
-            bombPercentageInput.interactable = false;
+            GameOptionHandler.instance.gridSizeXInput.interactable = false;
+            GameOptionHandler.instance.gridSizeYInput.interactable = false;
+            GameOptionHandler.instance.bombPercentageInput.interactable = false;
+            GameOptionHandler.instance.startPosToggle.interactable = false;
         }
         if (GameNetworkManager.instance.isSingleplayer)
         {
@@ -66,9 +64,10 @@ public class LobbyManager : NetworkBehaviour
         }
 
         if (IsHost) UpdateGameOptions();
-        gridSizeXInput.text = GameOptionPersistence.gridX.ToString();
-        gridSizeYInput.text = GameOptionPersistence.gridY.ToString();
-        bombPercentageInput.text = GameOptionPersistence.bombPercentage.ToString();
+        GameOptionHandler.instance.gridSizeXInput.text = GameOptionPersistence.gridX.ToString();
+        GameOptionHandler.instance.gridSizeYInput.text = GameOptionPersistence.gridY.ToString();
+        GameOptionHandler.instance.bombPercentageInput.text = GameOptionPersistence.bombPercentage.ToString();
+        GameOptionHandler.instance.startPosToggle.isOn = GameOptionPersistence.startPos;
     }
 
     private void PlayerCollectionChanged_Callback(object sender, NotifyCollectionChangedEventArgs args)
@@ -138,55 +137,24 @@ public class LobbyManager : NetworkBehaviour
     public void UpdateGameOptions()
     {
         Debug.Log("Updating game options");
-        int gridX = 10;
-        int gridY = 10;
-        float bombPercentage = 12.5f;
-        try
-        {
-            gridX = int.Parse(gridSizeXInput.text);
-            gridY = int.Parse(gridSizeYInput.text);
-            bombPercentage = float.Parse(bombPercentageInput.text);
-        } catch (Exception e)
-        {
-            if (prevBombPercent != "")
-            {
-                bombPercentage = float.Parse(prevBombPercent);
-            } else
-            {
-                bombPercentage = 12.5f;
-            }
-        }
-
-        if (gridX > 100) gridX = 100;
-        if (gridY > 100) gridY = 100;
-        if (bombPercentage > 99) bombPercentage = 99;
-
-        if (gridX < 5) gridX = 5;
-        if (gridY < 5) gridY = 5;
-        if (bombPercentage < 1) bombPercentage = 1;
-
-        if (gridSizeXInput.text != gridX.ToString()) gridSizeXInput.text = gridX.ToString();
-        if (gridSizeYInput.text != gridY.ToString()) gridSizeYInput.text = gridY.ToString();
-        if (bombPercentageInput.text != bombPercentage.ToString()) bombPercentageInput.text = bombPercentage.ToString();
-
-        prevBombPercent = bombPercentageInput.text;
-
-        UpdateGameOptions_Rpc(gridX, gridY, bombPercentage);
+        UpdateGameOptions_Rpc(GameOptionPersistence.gridX, GameOptionPersistence.gridY, GameOptionPersistence.bombPercentage, GameOptionPersistence.startPos);
     }
 
     [Rpc(SendTo.Everyone)]
-    public void UpdateGameOptions_Rpc(int gridX, int gridY, float bombPercentage)
+    public void UpdateGameOptions_Rpc(int gridX, int gridY, float bombPercentage, bool startPos)
     {
         Debug.Log("Received game option update");
         GameOptionPersistence.gridX = gridX;
         GameOptionPersistence.gridY = gridY;
         GameOptionPersistence.bombPercentage = bombPercentage;
+        GameOptionPersistence.startPos = startPos;
 
         if (!IsHost)
         {
-            if (gridSizeXInput.text != gridX.ToString()) gridSizeXInput.text = gridX.ToString();
-            if (gridSizeYInput.text != gridY.ToString()) gridSizeYInput.text = gridY.ToString();
-            if (bombPercentageInput.text != bombPercentage.ToString()) bombPercentageInput.text = bombPercentage.ToString();
+            if (GameOptionHandler.instance.gridSizeXInput.text != gridX.ToString()) GameOptionHandler.instance.gridSizeXInput.text = gridX.ToString();
+            if (GameOptionHandler.instance.gridSizeYInput.text != gridY.ToString()) GameOptionHandler.instance.gridSizeYInput.text = gridY.ToString();
+            if (GameOptionHandler.instance.bombPercentageInput.text != bombPercentage.ToString()) GameOptionHandler.instance.bombPercentageInput.text = bombPercentage.ToString();
+            if (GameOptionHandler.instance.startPosToggle.isOn != startPos) GameOptionHandler.instance.startPosToggle.isOn = startPos;
         }
     }
 }
