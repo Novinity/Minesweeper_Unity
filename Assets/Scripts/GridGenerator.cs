@@ -118,6 +118,7 @@ public class GridGenerator : MonoBehaviour
 
         if (GameOptionPersistence.startPos)
         {
+            Debug.Log("Getting start pos");
             List<Cell> zeroes = new List<Cell>();
             foreach (Cell cell in cells)
             {
@@ -126,6 +127,7 @@ public class GridGenerator : MonoBehaviour
             if (zeroes.Count != 0)
             {
                 Cell startPos = zeroes[pseudoRandom.Next(0, zeroes.Count)];
+                Debug.Log($"Got start pos: {startPos.coord.x}, {startPos.coord.y}");
                 startPos.SetImage("safe");
             } else
             {
@@ -136,6 +138,7 @@ public class GridGenerator : MonoBehaviour
                 }
 
                 Cell startPos = safe[pseudoRandom.Next(0, safe.Count)];
+                Debug.Log($"Got start pos: {startPos.coord.x}, {startPos.coord.y}");
                 startPos.SetImage("safe");
             }
         }

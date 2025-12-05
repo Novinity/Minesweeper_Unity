@@ -32,6 +32,8 @@ public class GameManager : NetworkBehaviour
 
     InputSystem_Actions inputActions;
 
+    bool resetTriggeredByKey = false;
+
     void OnEnable()
     {
         if (inputActions != null) inputActions.Enable();
@@ -54,6 +56,11 @@ public class GameManager : NetworkBehaviour
         inputActions.Player.Pause.performed += delegate
         {
             TogglePause(!pauseScreen.activeSelf);
+        };
+        inputActions.Player.Reset.performed += delegate
+        {
+            resetTriggeredByKey = true;
+            Reset();
         };
 
         inputActions.Enable();
@@ -184,13 +191,21 @@ public class GameManager : NetworkBehaviour
         int nonBombsLeft = 0;
         int flagsLeft = GridGenerator.instance.bombCount;
         int cellsTouched = 0;
+        bool hasTouchedACell = false;
+
+        Cell startPos = null;
         foreach (Cell cell in GridGenerator.instance.cells)
         {
             if (!cell.isBomb && !cell.isTriggered) nonBombsLeft++;
             if (cell.isFlagged) flagsLeft--;
             if (cell.isTriggered || cell.isFlagged) cellsTouched++;
 
-            if (cell.curImg == "safe") cell.SetImage("");
+            if (cell.curImg == "safe") startPos = cell;
+        }
+
+        if (startPos != null && cellsTouched != 0)
+        {
+            startPos.SetImage("");
         }
         Player.LocalPlayer.TilesLeft.Value = GridGenerator.instance.map.Length - cellsTouched;
 
@@ -232,6 +247,7 @@ public class GameManager : NetworkBehaviour
 
     public void Reset()
     {
+        StopCoroutine("Coro_TriggerEnd");
         if (GameNetworkManager.instance.isSingleplayer)
         {
             seed.Value = Random.Range(-1000000, 100001);
@@ -258,7 +274,14 @@ public class GameManager : NetworkBehaviour
             gameStarted.Value = false;
             gameEnded.Value = false;
             Player.LocalPlayer.Loaded.Value = true;
-            StartCoroutine(WaitForAllLoaded());
+            if (!resetTriggeredByKey)
+            {
+                StartCoroutine(WaitForAllLoaded());
+            } else
+            {
+                resetTriggeredByKey = false;
+                gameStarted.Value = true;
+            }
         }
     }
 
