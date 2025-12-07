@@ -54,14 +54,11 @@ public class GameOptionHandler : MonoBehaviour
 
         prevBombPercent = bombPercentageInput.text;
 
+        GameOptionPersistence.gridX = gridX;
+        GameOptionPersistence.gridY = gridY;
+        GameOptionPersistence.bombPercentage = bombPercentage;
+        GameOptionPersistence.startPos = startPos;
+        Debug.Log("updating");
         if (LobbyManager.instance) LobbyManager.instance.UpdateGameOptions();
-        else
-        {
-            Debug.Log("updating");
-            GameOptionPersistence.gridX = gridX;
-            GameOptionPersistence.gridY = gridY;
-            GameOptionPersistence.bombPercentage = bombPercentage;
-            GameOptionPersistence.startPos = startPos;
-        }
     }
 }

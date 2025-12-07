@@ -53,6 +53,7 @@ public class GridGenerator : MonoBehaviour
 
     public void Generate()
     {
+        Debug.Log(GameOptionPersistence.gridX);
         // if (GameNetworkManager.instance.IsHost) GameManager.instance.gameStarted.Value = true;
         seed = GameManager.instance.seed.Value;
 
@@ -144,7 +145,7 @@ public class GridGenerator : MonoBehaviour
         }
 
         // Player.LocalPlayer.FlagsLeft.Value = bombCount;
-        Player.LocalPlayer.TilesLeft.Value = map.Length;
+        Player.LocalPlayer.BombsRemaining.Value = bombCount;
 
         generated = true;
     }

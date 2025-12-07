@@ -1168,9 +1168,9 @@ MonoBehaviour:
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 862456052}
-        m_TargetAssemblyTypeName: LobbyManager, Assembly-CSharp
-        m_MethodName: 
+      - m_Target: {fileID: 862456057}
+        m_TargetAssemblyTypeName: GameOptionHandler, Assembly-CSharp
+        m_MethodName: UpdateGameOptions
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2283,9 +2283,9 @@ MonoBehaviour:
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 862456052}
-        m_TargetAssemblyTypeName: LobbyManager, Assembly-CSharp
-        m_MethodName: 
+      - m_Target: {fileID: 862456057}
+        m_TargetAssemblyTypeName: GameOptionHandler, Assembly-CSharp
+        m_MethodName: UpdateGameOptions
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

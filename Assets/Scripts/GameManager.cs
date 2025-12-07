@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
@@ -102,33 +103,55 @@ public class GameManager : NetworkBehaviour
         {
             if (player.OwnerClientId != NetworkManager.Singleton.LocalClientId)
             {
-                player.TilesLeft.OnValueChanged += OnOpponentTilesChanged;
+                player.BombsRemaining.OnValueChanged += OnOpponentBombsRemainingChanged;
                 opponents.Add(player);
 
                 GameObject txt = Instantiate(opponentTilesLeftPrefab, opponentTilesLeftList.transform);
+                txt.name = player.OwnerClientId.ToString();
                 opponentTileTexts.Add(txt.GetComponent<TMP_Text>());
             }
         }
 
         if (GameNetworkManager.instance.isSingleplayer || opponents.Count == 0) opponentTilesLeftList.SetActive(false);
-        else OnOpponentTilesChanged(0,0);
+        else OnOpponentBombsRemainingChanged(0,0);
+
+        GameNetworkManager.instance.OnClientDisconnectCallback += OnClientDisconnect_Callback;
 
         StartCoroutine(WaitForAllLoaded());
     }
 
-    private void OnOpponentTilesChanged(int previousValue, int newValue)
+    private void OnClientDisconnect_Callback(ulong clientId)
+    {
+        TMP_Text textToDelete = null;
+        for (int i = 0; i < opponentTileTexts.Count; i++)
+        {
+            if (clientId.ToString() == opponentTileTexts[i].name)
+            {
+                textToDelete = opponentTileTexts[i];
+                break;
+            }
+        }
+        if (textToDelete)
+        {
+            opponentTileTexts.Remove(textToDelete);
+            Destroy(textToDelete.gameObject);
+        }
+    }
+
+    private void OnOpponentBombsRemainingChanged(int previousValue, int newValue)
     {
         for (int i = 0; i < opponents.Count; i++)
         {
-            opponentTileTexts[i].text = $"{opponents[i].PlayerName.Value} Tiles Left: {opponents[i].TilesLeft.Value}";
+            opponentTileTexts[i].text = $"{opponents[i].PlayerName.Value} Bombs Left: {opponents[i].BombsRemaining.Value}";
         }
     }
 
     public override void OnNetworkDespawn()
     {
+        GameNetworkManager.instance.OnClientDisconnectCallback -= OnClientDisconnect_Callback;
         foreach (Player opponent in opponents)
         {
-            opponent.TilesLeft.OnValueChanged -= OnOpponentTilesChanged;
+            opponent.BombsRemaining.OnValueChanged -= OnOpponentBombsRemainingChanged;
         }
     }
 
@@ -191,6 +214,7 @@ public class GameManager : NetworkBehaviour
     public void CheckCells()
     {
         int nonBombsLeft = 0;
+        int bombsFound = 0;
         int flagsLeft = GridGenerator.instance.bombCount;
         int cellsTouched = 0;
         bool hasTouchedACell = false;
@@ -199,6 +223,7 @@ public class GameManager : NetworkBehaviour
         foreach (Cell cell in GridGenerator.instance.cells)
         {
             if (!cell.isBomb && !cell.isTriggered) nonBombsLeft++;
+            if (cell.isBomb && cell.isFlagged) bombsFound++;
             if (cell.isFlagged) flagsLeft--;
             if (cell.isTriggered || cell.isFlagged) cellsTouched++;
 
@@ -209,7 +234,7 @@ public class GameManager : NetworkBehaviour
         {
             startPos.SetImage("");
         }
-        Player.LocalPlayer.TilesLeft.Value = GridGenerator.instance.map.Length - cellsTouched;
+        Player.LocalPlayer.BombsRemaining.Value = GridGenerator.instance.bombCount - bombsFound;
 
         UpdateFlagCount(flagsLeft);
         if (nonBombsLeft == 0) WinGame();

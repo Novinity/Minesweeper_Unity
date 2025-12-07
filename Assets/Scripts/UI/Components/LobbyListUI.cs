@@ -67,4 +67,12 @@ public class LobbyListUI : MonoBehaviour
         MenuUIManager.instance.ToggleLoadingScreen(true);
         GameNetworkManager.instance.JoinLobbyWithCode(codeInput.text.Replace(" ", ""));
     }
+
+    public void OnEndPlayerCapEdit()
+    {
+        if (maxPlayersInput.text.Trim() == "") maxPlayersInput.text = "2";
+        int maxPlayersSet = int.Parse(maxPlayersInput.text);
+        if (maxPlayersSet < 2) maxPlayersInput.text = "2";
+        else if (maxPlayersSet > GameNetworkManager.instance.MaxPlayers) maxPlayersInput.text = GameNetworkManager.instance.MaxPlayers.ToString();
+    }
 }
