@@ -55,10 +55,12 @@ public class GameManager : NetworkBehaviour
 
         inputActions.Player.Pause.performed += delegate
         {
+            if (!gameStarted.Value) return;
             TogglePause(!pauseScreen.activeSelf);
         };
         inputActions.Player.Reset.performed += delegate
         {
+            if (!gameStarted.Value) return;
             resetTriggeredByKey = true;
             Reset();
         };
@@ -221,25 +223,29 @@ public class GameManager : NetworkBehaviour
     IEnumerator Coro_TriggerEnd(bool won)
     {
         yield return new WaitForSeconds(2);
-        if (GameNetworkManager.instance.isSingleplayer)
+        if (hasLost || gameEnded.Value)
         {
-            if (won) winScreen.SetActive(true);
-            else loseScreen.SetActive(true);
-        } else
-        {
-            if (won) winScreenM.SetActive(true);
-            else if (gameEnded.Value) loseScreenM.SetActive(true);
-            else loseScreen.SetActive(true);
-            if (gameEnded.Value)
+            TogglePause(false);
+            if (GameNetworkManager.instance.isSingleplayer)
             {
-                if (IsHost)
+                if (won) winScreen.SetActive(true);
+                else loseScreen.SetActive(true);
+            } else
+            {
+                if (won) winScreenM.SetActive(true);
+                else if (gameEnded.Value) loseScreenM.SetActive(true);
+                else loseScreen.SetActive(true);
+                if (gameEnded.Value)
                 {
-                    winButtonM.interactable = true;
-                    loseButtonM.interactable = true;
-                } else
-                {
-                    winButtonM.interactable = false;
-                    loseButtonM.interactable = false;
+                    if (IsHost)
+                    {
+                        winButtonM.interactable = true;
+                        loseButtonM.interactable = true;
+                    } else
+                    {
+                        winButtonM.interactable = false;
+                        loseButtonM.interactable = false;
+                    }
                 }
             }
         }
@@ -247,13 +253,13 @@ public class GameManager : NetworkBehaviour
 
     public void Reset()
     {
-        StopCoroutine("Coro_TriggerEnd");
         if (GameNetworkManager.instance.isSingleplayer)
         {
             seed.Value = Random.Range(-1000000, 100001);
             time = 0;
         }
 
+        TogglePause(false);
         GridGenerator.instance.Generate();
         UnLose();
         CheckCells();

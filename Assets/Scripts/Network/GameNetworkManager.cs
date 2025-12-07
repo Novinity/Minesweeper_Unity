@@ -84,6 +84,24 @@ public class GameNetworkManager : NetworkManager
         OnClientConnectedCallback += OnClientConnected_Callback;
         OnClientDisconnectCallback += OnClientDisconnect_Callback;
         ConnectionApprovalCallback += ApprovalCheck;
+
+        Application.wantsToQuit += ApplicationWantsToQuit_Callback;
+    }
+
+    private bool ApplicationWantsToQuit_Callback()
+    {
+        if (m_Lobby != null)
+        {
+            foreach (Player player in players)
+            {
+                if (player.OwnerClientId == LocalClientId) continue;
+                DisconnectClient(player.OwnerClientId, "Host left the game");
+            }
+            if (m_Lobby.HostId == AuthenticationService.Instance.PlayerId) LobbyService.Instance.DeleteLobbyAsync(m_Lobby.Id);
+            else LobbyService.Instance.RemovePlayerAsync(m_Lobby.Id, AuthenticationService.Instance.PlayerId);
+            Shutdown();
+        }
+        return true;
     }
 
     private void OnClientConnected_Callback(ulong clientId)
@@ -123,6 +141,8 @@ public class GameNetworkManager : NetworkManager
         OnClientDisconnectCallback -= OnClientDisconnect_Callback;
         ConnectionApprovalCallback -= ApprovalCheck;
 
+        Application.wantsToQuit -= ApplicationWantsToQuit_Callback;
+
         instance = null;
     }
 
@@ -147,7 +167,8 @@ public class GameNetworkManager : NetworkManager
 
         options.Data = new Dictionary<string, DataObject>()
         {
-            { "RelayCode", new DataObject(DataObject.VisibilityOptions.Public, joinCode) }  
+            { "RelayCode", new DataObject(DataObject.VisibilityOptions.Public, joinCode) },
+            { "ProtocolVersion", new DataObject(visibility: DataObject.VisibilityOptions.Public, value: NetworkConfig.ProtocolVersion.ToString(), index: DataObject.IndexOptions.S1) }
         };
 
         companion.unityTransport.SetRelayServerData(AllocationUtils.ToRelayServerData(allocation, "udp"));
@@ -156,15 +177,6 @@ public class GameNetworkManager : NetworkManager
         m_Lobby = lobby;
 
         StartCoroutine(HeartbeatLobbyCoroutine(1));
-
-        // lobbyEventCallbacks = new LobbyEventCallbacks();
-        // lobbyEventCallbacks.PlayerJoined += (List<LobbyPlayerJoined> playersJoined) =>
-        // {
-        //     foreach (LobbyPlayerJoined lobbyPlayerJoined in playersJoined)
-        //     {
-        //         Debug.Log(lobbyPlayerJoined.Player.Profile.Name);
-        //     }  
-        // };
 
 
         StartHost();
@@ -273,10 +285,10 @@ public class GameNetworkManager : NetworkManager
         }
     }
 
-    void OnApplicationQuit()
-    {
-        if (m_Lobby != null) LobbyService.Instance.RemovePlayerAsync(m_Lobby.Id, AuthenticationService.Instance.PlayerId);
-    }
+    // void OnApplicationQuit()
+    // {
+        
+    // }
 
     public async Task GetLobbiesList()
     {
@@ -296,6 +308,11 @@ public class GameNetworkManager : NetworkManager
                     field: QueryFilter.FieldOptions.IsLocked,
                     op: QueryFilter.OpOptions.EQ,
                     value: "false"
+                ),
+                new QueryFilter(
+                    field: QueryFilter.FieldOptions.S1,
+                    op: QueryFilter.OpOptions.EQ,
+                    value: NetworkConfig.ProtocolVersion.ToString()
                 )
             };
 

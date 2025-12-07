@@ -1,6 +1,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using TMPro;
+using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using UnityEngine;
@@ -11,9 +12,10 @@ public class MenuUIManager : MonoBehaviour {
     public static MenuUIManager instance;
 
     public GameObject mainMenu;
-    public GameObject lobbyListScreen, loadingScreen, lobbyCreateScreen;
+    public GameObject lobbyListScreen, loadingScreen, lobbyCreateScreen, kickScreen;
 
     public TMP_InputField nameInputField;
+    public TMP_Text reasonText, versionText;
 
     private void Awake() {
         instance = this;
@@ -28,7 +30,15 @@ public class MenuUIManager : MonoBehaviour {
         GameOptionPersistence.bombPercentage = 12.5f;
         GameOptionPersistence.startPos = true;
 
+        versionText.text = $"v{Application.version}";
+
         UpdatePlayerName();
+
+        if (NetworkManager.Singleton.DisconnectReason != null && NetworkManager.Singleton.DisconnectEvent != NetworkTransport.DisconnectEvents.TransportShutdown)
+        {
+            reasonText.text = NetworkManager.Singleton.DisconnectReason;
+            kickScreen.SetActive(true);
+        }
     }
 
     public void PlaySingleplayer() {
