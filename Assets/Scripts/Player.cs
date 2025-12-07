@@ -1,6 +1,7 @@
 using System;
 using Unity.Collections;
 using Unity.Netcode;
+using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -9,6 +10,7 @@ public class Player : NetworkBehaviour
     public static Player LocalPlayer { get; private set;}
 
     public NetworkVariable<FixedString64Bytes> PlayerName = new NetworkVariable<FixedString64Bytes>("Unknown", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    public NetworkVariable<FixedString512Bytes> AuthID = new NetworkVariable<FixedString512Bytes>("", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public NetworkVariable<bool> isHost = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     public NetworkVariable<int> BombsRemaining = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -34,6 +36,7 @@ public class Player : NetworkBehaviour
     {
         if (!IsOwner) return;
         PlayerName.Value = PlayerPrefs.GetString("PlayerName");
+        AuthID.Value = AuthenticationService.Instance.PlayerId;
         LocalPlayer = this;
 
         SceneManager.activeSceneChanged += OnSceneChanged;

@@ -9522,7 +9522,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameNetworkManager
   NetworkManagerExpanded: 1
   NetworkConfig:
-    ProtocolVersion: 6
+    ProtocolVersion: 7
     NetworkTransport: {fileID: 1601682395}
     PlayerPrefab: {fileID: 0}
     Prefabs:

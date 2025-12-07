@@ -19,7 +19,7 @@ public class GameManager : NetworkBehaviour
 
     [SerializeField] private GameObject winScreen, loseScreen, winScreenM, loseScreenM, pauseScreen, waitingForPlayersScreen, countdownScreen;
     [SerializeField] private GameObject[] endEarlyButtons;
-    [SerializeField] private TMP_Text timerText, finalTimeText, finalTimeText2, flagsLeftText, countdownText;
+    [SerializeField] private TMP_Text timerText, finalTimeText, finalTimeText2, flagsLeftText, countdownText, winnerText;
     [SerializeField] private Button loseButtonM, winButtonM;
 
     [SerializeField] private GameObject opponentTilesLeftPrefab, opponentTilesLeftList;
@@ -208,7 +208,18 @@ public class GameManager : NetworkBehaviour
     public void BroadcastWin_Rpc(FixedString512Bytes winner)
     {
         if (winner == AuthenticationService.Instance.PlayerId) StartCoroutine(Coro_TriggerEnd(true));
-        else StartCoroutine(Coro_TriggerEnd(false));
+        else
+        {
+            foreach (Player player in GameNetworkManager.instance.players)
+            {
+                if (player.AuthID.Value == winner)
+                {
+                    winnerText.text = $"{player.PlayerName.Value} Wins!";
+                    break;
+                }
+            }
+            StartCoroutine(Coro_TriggerEnd(false));
+        }
     }
 
     public void CheckCells()
