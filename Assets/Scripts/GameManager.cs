@@ -1,6 +1,6 @@
+// using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
@@ -15,6 +15,7 @@ public class GameManager : NetworkBehaviour
 
     public NetworkVariable<bool> gameStarted = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public NetworkVariable<bool> gameEnded = new NetworkVariable<bool>(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<long> gameStartTime = new NetworkVariable<long>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     public bool hasLost = false;
 
     [SerializeField] private GameObject winScreen, loseScreen, winScreenM, loseScreenM, pauseScreen, waitingForPlayersScreen, countdownScreen;
@@ -34,6 +35,9 @@ public class GameManager : NetworkBehaviour
     InputSystem_Actions inputActions;
 
     bool resetTriggeredByKey = false;
+    public bool chording = false;
+
+    private bool leftClickHeld, rightClickHeld;
 
     void OnEnable()
     {
@@ -66,7 +70,82 @@ public class GameManager : NetworkBehaviour
             Reset();
         };
 
+        inputActions.Player.Attack.performed += delegate
+        {
+            leftClickHeld = true;
+            if (rightClickHeld)
+            {
+                chording = true;
+                CheckChord();
+            }
+        };
+        inputActions.Player.Attack.canceled += delegate
+        {
+            leftClickHeld = false;
+            chording = false;
+        };
+
+        inputActions.Player.ADS.performed += delegate
+        {
+            rightClickHeld = true;
+            if (leftClickHeld)
+            {
+                chording = true;
+                CheckChord();
+            }
+        };
+        inputActions.Player.ADS.canceled += delegate
+        {
+            rightClickHeld = false;
+            chording = false;
+        };
+
         inputActions.Enable();
+    }
+
+    private void CheckChord()
+    {
+        foreach (Cell cell in GridGenerator.instance.cells)
+        {
+            if (cell.hovering)
+            {
+                cell.CheckChordSurroundings();
+                break;
+            }
+        }
+    }
+
+    public void CellHoverUpdate()
+    {
+        if (chording)
+        {
+            foreach (Cell cell in GridGenerator.instance.cells)
+            {
+                bool foundChording = false;
+                List<Cell> flaggedSurrounding = new List<Cell>();
+                List<Cell> surrounding = new List<Cell>();
+
+                for (int x = cell.coord.x - 1; x <= cell.coord.x + 1; x++)
+                {
+                    for (int y = cell.coord.y - 1; y <= cell.coord.y + 1; y++)
+                    {
+                        Cell cell2 = GridGenerator.instance.getCellAtPosition(x, y);
+                        if (cell2)
+                        {
+                            if (cell2.hovering) foundChording = true;
+                            if (cell2.isFlagged) flaggedSurrounding.Add(cell2);
+                            surrounding.Add(cell2);
+                        }
+                    }
+                }
+
+                if (foundChording)
+                {
+                    cell.HoverFX();
+                }
+                else if (!cell.hovering) cell.UnhoverFX();
+            }
+        }
     }
 
     public override void OnNetworkSpawn()
@@ -343,18 +422,26 @@ public class GameManager : NetworkBehaviour
         waitingForPlayersScreen.SetActive(true);
         while (true)
         {
-            int loaded = 0;
-            foreach (Player player in GameNetworkManager.instance.players)
+            if (IsHost)
             {
-                if (player.Loaded.Value)
+                int loaded = 0;
+                foreach (Player player in GameNetworkManager.instance.players)
                 {
-                    loaded++;
+                    if (player.Loaded.Value)
+                    {
+                        loaded++;
+                    }
                 }
+                if (loaded != GameNetworkManager.instance.players.Count) yield return new WaitForEndOfFrame();
+                else break;
+            } else
+            {
+                if (gameStartTime.Value < 0) yield return new WaitForEndOfFrame();
+                else break;
             }
-            if (loaded != GameNetworkManager.instance.players.Count) yield return new WaitForEndOfFrame();
-            else break;
         }
 
+        gameStartTime.Value = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         waitingForPlayersScreen.SetActive(false);
         countdownScreen.SetActive(true);
         

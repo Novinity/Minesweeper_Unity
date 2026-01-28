@@ -9489,6 +9489,7 @@ MonoBehaviour:
     Address: 127.0.0.1
     Port: 7777
     ServerListenAddress: 0.0.0.0
+    ClientBindPort: 0
   DebugSimulator:
     PacketDelayMS: 0
     PacketJitterMS: 0
@@ -9522,7 +9523,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameNetworkManager
   NetworkManagerExpanded: 1
   NetworkConfig:
-    ProtocolVersion: 7
+    ProtocolVersion: 8
     NetworkTransport: {fileID: 1601682395}
     PlayerPrefab: {fileID: 0}
     Prefabs:

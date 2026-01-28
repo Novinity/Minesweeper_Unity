@@ -3,6 +3,7 @@ using TMPro;
 using Unity.Services.Lobbies.Models;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
@@ -23,11 +24,9 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
     Color defaultColor;
     public bool hovering = false;
-    public bool chording = false;
-
-    private bool leftClickHeld, rightClickHeld;
 
     private InputSystem_Actions inputActions;
+    Vector2 prevMousePos = new();
 
     void OnEnable()
     {
@@ -43,35 +42,7 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         inputActions = new InputSystem_Actions();
 
-        inputActions.Player.Attack.performed += delegate
-        {
-            leftClickHeld = true;
-            if (rightClickHeld)
-            {
-                chording = true;
-                CheckChordSurroundings();
-            }
-        };
-        inputActions.Player.Attack.canceled += delegate
-        {
-            leftClickHeld = false;
-            chording = false;
-        };
-
-        inputActions.Player.ADS.performed += delegate
-        {
-            rightClickHeld = true;
-            if (leftClickHeld)
-            {
-                chording = true;
-                CheckChordSurroundings();
-            }
-        };
-        inputActions.Player.ADS.canceled += delegate
-        {
-            rightClickHeld = false;
-            chording = false;
-        };
+        
 
         inputActions.Enable();
     }
@@ -169,43 +140,6 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
 
             GameManager.instance.CheckCells();
         }
-    }
-
-    void Update()
-    {
-        if (chording && !isFlagged && !isTriggered)
-        {
-            bool foundChording = false;
-            List<Cell> flaggedSurrounding = new List<Cell>();
-            List<Cell> surrounding = new List<Cell>();
-            for (int x = coord.x - 1; x <= coord.x + 1; x++)
-            {
-                for (int y = coord.y - 1; y <= coord.y + 1; y++)
-                {
-                    Cell cell = GridGenerator.instance.getCellAtPosition(x, y);
-                    if (cell)
-                    {
-                        if (cell.hovering) foundChording = true;
-                        if (cell.isFlagged) flaggedSurrounding.Add(cell);
-                        surrounding.Add(cell);
-                    }
-                }
-            }
-
-            if (foundChording)
-            {
-                if (isBomb)
-                {
-                    foreach (Cell flagged in flaggedSurrounding)
-                    {
-                        if (!flagged.isBomb)
-                            Trigger();
-                    }
-                }
-                HoverFX();
-            }
-            else if (!hovering) UnhoverFX();
-        } else if (!hovering) UnhoverFX();
     }
 
     public void ToggleFlag(bool toggle)
@@ -321,6 +255,7 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
         hovering = true;
+        GameManager.instance.CellHoverUpdate();
         HoverFX();
     }
 
@@ -328,6 +263,7 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     {
         hovering = false;
         if ((isTriggered && isBomb) || GameManager.instance.hasLost || GameManager.instance.gameEnded.Value) return;
+        GameManager.instance.CellHoverUpdate();
         UnhoverFX();
     }
 
@@ -360,9 +296,9 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
         Unhover();
     }
 
-    void CheckChordSurroundings()
+    public void CheckChordSurroundings()
     {
-        if (chording && !isFlagged && isTriggered && hovering)
+        if (GameManager.instance.chording && !isFlagged && isTriggered && hovering)
         {
             List<Cell> flaggedSurrounding = new List<Cell>();
             List<Cell> surrounding = new List<Cell>();

@@ -107,6 +107,7 @@ public class LobbyManager : NetworkBehaviour
     public void StartGame()
     {
         if (!GameNetworkManager.instance.IsHost) return;
+        UpdateGameOptions();
         GameNetworkManager.instance.SceneManager.LoadScene("s2_Game", UnityEngine.SceneManagement.LoadSceneMode.Single);
     }
 
