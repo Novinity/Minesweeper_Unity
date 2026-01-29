@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -40,17 +41,32 @@ public class Player : NetworkBehaviour
         LocalPlayer = this;
 
         SceneManager.activeSceneChanged += OnSceneChanged;
-        if (SceneManager.GetActiveScene().name == "s2_Game")
-        {
-            Loaded.Value = true;
-        } else
+        if (SceneManager.GetActiveScene().name != "s2_Game")
         {
             Loaded.Value = false;
+        } else
+        {
+            StartCoroutine(WaitForLoaded_Coro());
         }
     }
 
     public override void OnNetworkDespawn()
     {
         GameNetworkManager.instance.players.Remove(this);
+    }
+
+    IEnumerator WaitForLoaded_Coro()
+    {
+        bool cancel = false;
+        while (GridGenerator.instance == null || !GridGenerator.instance.generated)
+        {
+            if (SceneManager.GetActiveScene().name != "s2_Game")
+            {
+                cancel = true;
+                break;
+            }
+            yield return new WaitForEndOfFrame();
+        }
+        if (!cancel) Loaded.Value = true;
     }
 }

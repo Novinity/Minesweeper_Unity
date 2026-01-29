@@ -78,6 +78,11 @@ public class LobbyManager : NetworkBehaviour
         {
             AddPlayerItem(newPlayer);
         }
+
+        if (IsHost)
+        {
+            UpdateGameOptions();
+        }
     }
 
     void OnDestroy()

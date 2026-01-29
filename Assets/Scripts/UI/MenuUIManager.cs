@@ -1,11 +1,8 @@
-using System.IO;
 using System.Threading.Tasks;
 using TMPro;
 using Unity.Netcode;
 using Unity.Services.Authentication;
-using Unity.Services.Core;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class MenuUIManager : MonoBehaviour {
@@ -13,6 +10,7 @@ public class MenuUIManager : MonoBehaviour {
 
     public GameObject mainMenu;
     public GameObject lobbyListScreen, loadingScreen, lobbyCreateScreen, kickScreen;
+    public Button multiplayerButton;
 
     public TMP_InputField nameInputField;
     public TMP_Text reasonText, versionText;

@@ -9523,7 +9523,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameNetworkManager
   NetworkManagerExpanded: 1
   NetworkConfig:
-    ProtocolVersion: 8
+    ProtocolVersion: 9
     NetworkTransport: {fileID: 1601682395}
     PlayerPrefab: {fileID: 0}
     Prefabs:
@@ -9700,6 +9700,7 @@ MonoBehaviour:
   loadingScreen: {fileID: 917673758}
   lobbyCreateScreen: {fileID: 811219492}
   kickScreen: {fileID: 631540004}
+  multiplayerButton: {fileID: 1470203406}
   nameInputField: {fileID: 491845524}
   reasonText: {fileID: 583288140}
   versionText: {fileID: 1800888610}

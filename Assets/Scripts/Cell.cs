@@ -25,28 +25,6 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
     Color defaultColor;
     public bool hovering = false;
 
-    private InputSystem_Actions inputActions;
-    Vector2 prevMousePos = new();
-
-    void OnEnable()
-    {
-        if (inputActions != null) inputActions.Enable();
-    }
-
-    void OnDisable()
-    {
-        if (inputActions != null) inputActions.Disable();
-    }
-
-    void Start()
-    {
-        inputActions = new InputSystem_Actions();
-
-        
-
-        inputActions.Enable();
-    }
-
     public void Initialize(GridGenerator.Coord coord, bool isBomb)
     {
         this.coord = coord;
@@ -324,6 +302,12 @@ public class Cell : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, I
                 foreach (Cell cell in surrounding)
                 {
                     if (!cell.isFlagged) cell.Trigger();
+                }
+            } else if (flaggedSurrounding.Count >= getSurroundingBombCount())
+            {
+                foreach (Cell cell in surrounding)
+                {
+                    if (cell.isBomb && !cell.isFlagged) cell.Trigger();
                 }
             }
         }

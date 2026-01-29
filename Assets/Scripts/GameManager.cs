@@ -38,6 +38,9 @@ public class GameManager : NetworkBehaviour
     public bool chording = false;
 
     private bool leftClickHeld, rightClickHeld;
+    private bool clickedOne = false;
+
+    Cell hoveredCell;
 
     void OnEnable()
     {
@@ -76,6 +79,7 @@ public class GameManager : NetworkBehaviour
             if (rightClickHeld)
             {
                 chording = true;
+                CellHoverUpdate();
                 CheckChord();
             }
         };
@@ -83,6 +87,7 @@ public class GameManager : NetworkBehaviour
         {
             leftClickHeld = false;
             chording = false;
+            CellHoverUpdate();
         };
 
         inputActions.Player.ADS.performed += delegate
@@ -91,6 +96,7 @@ public class GameManager : NetworkBehaviour
             if (leftClickHeld)
             {
                 chording = true;
+                CellHoverUpdate();
                 CheckChord();
             }
         };
@@ -98,6 +104,7 @@ public class GameManager : NetworkBehaviour
         {
             rightClickHeld = false;
             chording = false;
+            CellHoverUpdate();
         };
 
         inputActions.Enable();
@@ -109,6 +116,7 @@ public class GameManager : NetworkBehaviour
         {
             if (cell.hovering)
             {
+                hoveredCell = cell;
                 cell.CheckChordSurroundings();
                 break;
             }
@@ -117,33 +125,34 @@ public class GameManager : NetworkBehaviour
 
     public void CellHoverUpdate()
     {
-        if (chording)
+        bool foundHoveringCell = false;
+        foreach (Cell cell in GridGenerator.instance.cells)
         {
-            foreach (Cell cell in GridGenerator.instance.cells)
+            if (cell.hovering)
             {
-                bool foundChording = false;
-                List<Cell> flaggedSurrounding = new List<Cell>();
-                List<Cell> surrounding = new List<Cell>();
-
-                for (int x = cell.coord.x - 1; x <= cell.coord.x + 1; x++)
+                hoveredCell = cell;
+                foundHoveringCell = true;
+                hoveredCell.HoverFX();
+            } else
+            {
+                cell.UnhoverFX();
+            }
+        }
+        if (!foundHoveringCell)
+        {
+            hoveredCell = null;
+            return;
+        }
+        if (chording && hoveredCell)
+        {
+            for (int x = hoveredCell.coord.x - 1; x <= hoveredCell.coord.x + 1; x++)
+            {
+                for (int y = hoveredCell.coord.y - 1; y <= hoveredCell.coord.y + 1; y++)
                 {
-                    for (int y = cell.coord.y - 1; y <= cell.coord.y + 1; y++)
-                    {
-                        Cell cell2 = GridGenerator.instance.getCellAtPosition(x, y);
-                        if (cell2)
-                        {
-                            if (cell2.hovering) foundChording = true;
-                            if (cell2.isFlagged) flaggedSurrounding.Add(cell2);
-                            surrounding.Add(cell2);
-                        }
-                    }
+                    Cell cell2 = GridGenerator.instance.getCellAtPosition(x, y);
+                    if (!cell2) continue;
+                    cell2.HoverFX();
                 }
-
-                if (foundChording)
-                {
-                    cell.HoverFX();
-                }
-                else if (!cell.hovering) cell.UnhoverFX();
             }
         }
     }
@@ -237,7 +246,7 @@ public class GameManager : NetworkBehaviour
     void Update()
     {
         if (gameStarted.Value && !gameEnded.Value && !hasLost) {
-            if (!pauseScreen.activeSelf || !GameNetworkManager.instance.isSingleplayer)
+            if ((!pauseScreen.activeSelf && clickedOne) || !GameNetworkManager.instance.isSingleplayer || clickedOne)
                 time += Time.deltaTime / 60;
         }
         timerText.text = TimeUtils.formatTime(time);
@@ -320,6 +329,7 @@ public class GameManager : NetworkBehaviour
             if (cell.curImg == "safe") startPos = cell;
         }
 
+        if (cellsTouched != 0) clickedOne = true;
         if (startPos != null && cellsTouched != 0)
         {
             startPos.SetImage("");
@@ -373,6 +383,7 @@ public class GameManager : NetworkBehaviour
             seed.Value = Random.Range(-1000000, 100001);
             time = 0;
         }
+        clickedOne = false;
 
         TogglePause(false);
         GridGenerator.instance.Generate();

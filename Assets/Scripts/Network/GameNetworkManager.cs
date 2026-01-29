@@ -36,6 +36,7 @@ public class GameNetworkManager : NetworkManager
     LobbyEventCallbacks lobbyEventCallbacks;
 
     public bool initializedUS = false;
+    private bool couldSignIn = false;
 
     public enum LobbyType
     {
@@ -62,18 +63,30 @@ public class GameNetworkManager : NetworkManager
 
         if (UnityServices.Instance.State == ServicesInitializationState.Initialized)
         {
-            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            try
+            {
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                couldSignIn = true;
+            } catch (Exception e)
+            {
+                Debug.LogWarning(e);
+            }
             if (!PlayerPrefs.HasKey("PlayerName"))
             {
                 string newName = "Player-" + UnityEngine.Random.Range(1000, 10000).ToString();
                 PlayerPrefs.SetString("PlayerName", newName);
-                await AuthenticationService.Instance.UpdatePlayerNameAsync(newName);
+                if (couldSignIn) await AuthenticationService.Instance.UpdatePlayerNameAsync(newName);
             }
         }
         initializedUS = true;
         if (MenuUIManager.instance)
         {
             MenuUIManager.instance.UpdatePlayerName();
+            if (!couldSignIn)
+            {
+                MenuUIManager.instance.nameInputField.interactable = false;
+                MenuUIManager.instance.multiplayerButton.interactable = false;
+            }
             MenuUIManager.instance.ToggleLoadingScreen(false);
         }
 

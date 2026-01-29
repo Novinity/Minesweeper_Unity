@@ -1,4 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
 
 public class GridGenerator : MonoBehaviour
@@ -16,9 +20,9 @@ public class GridGenerator : MonoBehaviour
     
     [SerializeField] private GameObject cellPrefab;
     [SerializeField] private Transform cellParent;
-    public List<Cell> cells = new List<Cell>();
+    public Cell[,] cells;
 
-    private bool generated = false;
+    public bool generated {get; private set;} = false;
 
     void Awake()
     {
@@ -35,35 +39,25 @@ public class GridGenerator : MonoBehaviour
         holderTransform.sizeDelta = new Vector2(MAP_WIDTH * 100, MAP_HEIGHT * 100);
         holderTransform.localScale = new Vector3(10f/MAP_WIDTH, 10f/MAP_WIDTH, 1);
 
-        // for (int x = 0; x < MAP_WIDTH; x++)
-        // {
-        //     for (int y = 0; y < MAP_HEIGHT; y++)
-        //     {
-        //         GameObject instantiatedCell = Instantiate(cellPrefab, cellParent);
-        //         Cell cell = instantiatedCell.GetComponent<Cell>();
-        //         cell.Initialize(new Coord(x, y), false);
-        //         cells.Add(cell);
-        //     }
-        // }
         bombCount = Mathf.RoundToInt(bombPercentage * (MAP_WIDTH * MAP_HEIGHT) / 100);
         GameManager.instance.UpdateFlagCount(bombCount);
-
-        // if (GameManager.instance.gameStarted.Value) Generate();
     }
 
     public void Generate()
     {
-        Debug.Log(GameOptionPersistence.gridX);
-        // if (GameNetworkManager.instance.IsHost) GameManager.instance.gameStarted.Value = true;
         seed = GameManager.instance.seed.Value;
 
-        foreach (Cell cell in cells)
+        if (cells != null && cells.Length > 0)
         {
-            Destroy(cell.gameObject);
+            foreach (Cell cell in cells)
+            {
+                Destroy(cell.gameObject);
+            }
         }
-        cells.Clear();
         
         map = new int[MAP_WIDTH, MAP_HEIGHT];
+        cells = new Cell[MAP_WIDTH, MAP_HEIGHT]; 
+
         System.Random pseudoRandom = new System.Random(seed.GetHashCode());
         Debug.Log($"Seed: {seed}");
 
@@ -80,40 +74,30 @@ public class GridGenerator : MonoBehaviour
         bombCount = Mathf.RoundToInt(bombPercentage * (MAP_WIDTH * MAP_HEIGHT) / 100);
         Debug.Log($"Bomb count: {bombCount}");
 
-        List<Coord> bombCoords = new List<Coord>();
+        List<Coord> allCoords = new List<Coord>();
 
-        int i = 0;
-        while (i < bombCount)
-        {
-            int x = pseudoRandom.Next(0, MAP_WIDTH);
-            int y = pseudoRandom.Next(0, MAP_HEIGHT);
+        for (int x = 0; x < MAP_WIDTH; x++)
+            for (int y = 0; y < MAP_HEIGHT; y++)
+                allCoords.Add(new Coord(x, y));
+        
+        allCoords = allCoords.OrderBy(_ => pseudoRandom.Next()).ToList();
 
-            Coord bombCoord = new Coord(x, y);
-            if (bombCoords.Contains(bombCoord))
-            {
-                continue;
-            }
-            bombCoords.Add(bombCoord);
-            i++;
-        }
+        HashSet<Coord> bombCoords = new HashSet<Coord>(
+            allCoords.Take(bombCount)
+        );
 
         for (int x = 0; x < MAP_WIDTH; x++)
         {
             for (int y = 0; y < MAP_HEIGHT; y++)
             {
                 Coord coord = new Coord(x, y);
-                if (bombCoords.Contains(coord))
-                {
-                    map[x, y] = 1;
-                } else
-                {
-                    map[x, y] = 0;
-                }
+                bool isBomb = bombCoords.Contains(coord);
+                map[x, y] = isBomb ? 1 : 0;
 
                 GameObject instantiatedCell = Instantiate(cellPrefab, cellParent);
                 Cell cell = instantiatedCell.GetComponent<Cell>();
-                cell.Initialize(coord, bombCoords.Contains(coord));
-                cells.Add(cell);
+                cell.Initialize(coord, isBomb);
+                cells[x, y] = cell;
             }
         }
 
@@ -152,14 +136,9 @@ public class GridGenerator : MonoBehaviour
 
     public Cell getCellAtPosition(int x, int y)
     {
-        foreach (Cell cell in cells)
-        {
-            if (cell.coord.x == x && cell.coord.y == y)
-            {
-                return cell;
-            }
-        }
-        return null;
+        if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT)
+            return null;
+        return cells[x, y];
     }
 
     [System.Serializable]
